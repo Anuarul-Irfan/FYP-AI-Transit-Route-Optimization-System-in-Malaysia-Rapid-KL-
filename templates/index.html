@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+        <h1>AI-ROUTE INTEGRATION SYSTEM</h1>
+    </header>
+
+    <div class="main-content">
+        <!-- Left Panel - Preferences -->
+        <div class="left-panel">
+            <!-- Station Selection - Moved to top -->
+            <div class="station-selection">
+                <div id="routes-container">
+                    <!-- Initial route segment -->
+                    <div class="route-segment" data-segment="0">
+                        <div class="station-input">
+                            <label for="from-station-0">From:</label>
+                            <div class="input-with-icon">
+                                <input type="text" id="from-station-0" class="from-station" placeholder="Enter starting station...">
+                                <div class="selected-station-info"></div>
+                            </div>
+                        </div>
+
+                        <div class="station-input">
+                            <label for="to-station-0">To:</label>
+                            <div class="input-with-icon">
+                                <input type="text" id="to-station-0" class="to-station" placeholder="Enter destination station...">
+                                <div class="selected-station-info"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="route-buttons">
+                    <button id="add-destination" class="secondary-button">
+                        <i class="fas fa-plus"></i>
+                        Add Destination
+                    </button>
+                    <button id="search-routes" class="primary-button">
+                        <i class="fas fa-search"></i>
+                        Find Routes
+                    </button>
+                </div>
+            </div>
+
+            <div class="preferences-panel">
+                <div class="panel-header">
+                    <h2>Route Preferences</h2>
+                    <button id="reset-preferences" class="secondary-button">Reset</button>
+                </div>
+
+                <form id="preferences-form">
+                    <div class="preference-group">
+                        <label for="cost-priority">Cost Priority</label>
+                        <div class="slider-container">
+                            <input type="range" id="cost-priority" min="0" max="1" step="0.1" value="0.5">
+                            <div class="slider-value">0.5</div>
+                        </div>
+                    </div>
+
+                    <div class="preference-group">
+                        <label for="comfort-priority">Comfort Priority</label>
+                        <div class="slider-container">
+                            <input type="range" id="comfort-priority" min="0" max="1" step="0.1" value="0.5">
+                            <div class="slider-value">0.5</div>
+                        </div>
+                    </div>
+
+                    <div class="preference-group">
+                        <label for="scenic-priority">Scenic Priority</label>
+                        <div class="slider-container">
+                            <input type="range" id="scenic-priority" min="0" max="1" step="0.1" value="0.5">
+                            <div class="slider-value">0.5</div>
+                        </div>
+                    </div>
+
+                    <div class="preference-group">
+                        <label for="distance-priority">Distance Priority</label>
+                        <div class="slider-container">
+                            <input type="range" id="distance-priority" min="0" max="1" step="0.1" value="0.5">
+                            <div class="slider-value">0.5</div>
+                        </div>
+                    </div>
+
+                    <div class="preference-group checkbox">
+                        <label for="oku-friendly">
+                            <input type="checkbox" id="oku-friendly">
+                            OKU-Friendly Routes Only
+                        </label>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right Panel - Results -->
+        <div class="right-panel">
+            <div class="results-panel" style="display: none;">
+                <div class="route-options">
+                    <!-- Route options will be populated here -->
+                </div>
+                <div class="route-details">
+                    <!-- Detailed steps will be shown here -->
+                </div>
+            </div>
+
+            <div class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Finding the best routes...</p>
+            </div>
+
+            <div class="error-message" style="display: none;">
+                <!-- Error messages will be shown here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

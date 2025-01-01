@@ -1,0 +1,478 @@
+/* Base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f5f5f5;
+}
+
+/* App Container */
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* Header */
+.app-header {
+    background-color: #047940;
+    color: white;
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.app-header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+/* Main Content Layout */
+.main-content {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 1rem;
+    padding: 1rem;
+    height: calc(100vh - 64px);
+    overflow: hidden;
+}
+
+/* Left Panel */
+.left-panel {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+/* Station Selection */
+.station-selection {
+    margin-bottom: 1.5rem;
+}
+
+#routes-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.route-segment {
+    position: relative;
+    padding: 1rem;
+    background: #f8f8f8;
+    border-radius: 8px;
+    border: 1px solid #eee;
+}
+
+.route-segment .remove-segment {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+}
+
+.route-segment .remove-segment:hover {
+    color: #d50032;
+    background: #fff5f5;
+}
+
+.route-connector {
+    height: 20px;
+    width: 2px;
+    background-color: #047940;
+    margin: 0 auto;
+}
+
+.station-input {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.station-input:last-child {
+    margin-bottom: 0;
+}
+
+.station-input label {
+    font-weight: 500;
+    color: #333;
+}
+
+.input-with-icon {
+    position: relative;
+}
+
+.input-with-icon input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.input-with-icon input:focus {
+    outline: none;
+    border-color: #047940;
+    box-shadow: 0 0 0 2px rgba(4,121,64,0.1);
+}
+
+.input-with-icon input[readonly] {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+}
+
+.selected-station-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: #fff;
+    border-radius: 4px;
+    min-height: 40px;
+}
+
+/* Route Buttons */
+.route-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+#add-destination {
+    flex: 1;
+}
+
+#search-routes {
+    flex: 2;
+}
+
+/* Buttons */
+.primary-button {
+    padding: 0.75rem 1rem;
+    background: #047940;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: background-color 0.2s;
+}
+
+.primary-button:hover {
+    background: #036835;
+}
+
+.secondary-button {
+    padding: 0.75rem 1rem;
+    background: white;
+    color: #047940;
+    border: 1px solid #047940;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+}
+
+.secondary-button:hover {
+    background: #f0f9f4;
+}
+
+/* Preferences Panel */
+.preferences-panel {
+    border-top: 1px solid #eee;
+    padding-top: 1.5rem;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.panel-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.preference-group {
+    margin-bottom: 1.5rem;
+}
+
+.preference-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+/* Sliders */
+.slider-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+input[type="range"] {
+    flex: 1;
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    appearance: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #047940;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.slider-value {
+    min-width: 40px;
+    text-align: center;
+    font-size: 0.875rem;
+}
+
+/* Right Panel */
+.right-panel {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+/* Results Panel */
+.results-panel {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 1.5rem;
+    height: 100%;
+}
+
+.route-options {
+    border-right: 1px solid #eee;
+    padding-right: 1.5rem;
+    overflow-y: auto;
+}
+
+/* Route Cards */
+.route-card {
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.route-card:hover {
+    border-color: #047940;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.route-card.selected {
+    border-color: #047940;
+    background: #f0f9f4;
+}
+
+.route-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.route-info {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: #666;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Route Details */
+.route-details {
+    overflow-y: auto;
+}
+
+.route-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.step {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f8f8f8;
+    border-radius: 4px;
+}
+
+.step-details {
+    flex: 1;
+}
+
+.step-type {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+/* Line Badge */
+.line-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: white;
+    font-weight: 500;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 60px;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+/* Station item in autocomplete */
+.station-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+}
+
+.station-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Loading State */
+.loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #047940;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Error Message */
+.error-message {
+    padding: 1rem;
+    background: #fff5f5;
+    color: #d50032;
+    border-radius: 4px;
+    margin-top: 1rem;
+}
+
+/* Autocomplete dropdown styling */
+.ui-autocomplete {
+    max-height: 300px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #ddd;
+    background: white;
+    z-index: 1000;
+}
+
+.ui-menu-item {
+    border-bottom: 1px solid #eee;
+}
+
+.ui-menu-item:last-child {
+    border-bottom: none;
+}
+
+.ui-menu-item:hover {
+    background-color: #f5f5f5;
+}
+
+.ui-menu-item .station-item {
+    padding: 8px 12px;
+}
+
+/* Scenic Spots */
+.scenic-spots {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: #f0f9f4;
+    border-radius: 4px;
+}
+
+.scenic-spots h4 {
+    margin-bottom: 0.5rem;
+    color: #047940;
+}
+
+.scenic-spots ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.scenic-spots li {
+    padding: 0.25rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.scenic-spots li:before {
+    content: '•';
+    color: #047940;
+} 
