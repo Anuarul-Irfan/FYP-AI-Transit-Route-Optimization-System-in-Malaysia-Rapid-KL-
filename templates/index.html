@@ -3,14 +3,81 @@
 {% block content %}
 <div class="app-container">
     <!-- Header -->
-    <header class="app-header">
-        <h1>AI-ROUTE INTEGRATION SYSTEM</h1>
-    </header>
+<header class="app-header">
+    <div class="header-content">
+        <div class="header-top">
+            <div class="logo-container">
+                <img src="{{ url_for('static', filename='images/logo.jpeg') }}" alt="Logo" class="logo">
+                <div class="title-container">
+                    <h1>AI-ROUTE INTEGRATION SYSTEM</h1>
+                    <span class="subtitle">Kuala Lumpur Public Transport Journey Planner</span>
+                </div>
+            </div>
+        </div>
+        <div class="transit-legend">
+            <div class="legend-title">
+                <i class="fas fa-map-signs"></i>
+                <span>Transit Lines Guide</span>
+            </div>
+            <div class="legend-container">
+                <div class="legend-item">
+                    <span class="line-badge" style="background-color: #D50032; color: white">
+                        <i class="fas fa-train"></i>
+                        <span class="line-code">KJ</span>
+                        <span class="line-name">Kelana Jaya Line</span>
+                    </span>
+                </div>
+                <div class="legend-item">
+                    <span class="line-badge" style="background-color: #76232F; color: white">
+                        <i class="fas fa-train"></i>
+                        <span class="line-code">PH</span>
+                        <span class="line-name">Sri Petaling Line</span>
+                    </span>
+                </div>
+                <div class="legend-item">
+                    <span class="line-badge" style="background-color: #E57200; color: white">
+                        <i class="fas fa-train"></i>
+                        <span class="line-code">AG</span>
+                        <span class="line-name">Ampang Line</span>
+                    </span>
+                </div>
+                <div class="legend-item">
+                    <span class="line-badge" style="background-color: #1A4731; color: white">
+                        <i class="fas fa-train"></i>
+                        <span class="line-code">MRT</span>
+                        <span class="line-name">Kajang Line</span>
+                    </span>
+                </div>
+                <div class="legend-item">
+                    <span class="line-badge" style="background-color: #FFCD00; color: black">
+                        <i class="fas fa-train"></i>
+                        <span class="line-code">PYL</span>
+                        <span class="line-name">Putrajaya Line</span>
+                    </span>
+                </div>
+                <div class="legend-item">
+                    <span class="line-badge" style="background-color: #84BD00; color: white">
+                        <i class="fas fa-train"></i>
+                        <span class="line-code">MR</span>
+                        <span class="line-name">Monorail</span>
+                    </span>
+                </div>
+                <div class="legend-item">
+                    <span class="line-badge" style="background-color: #115740; color: white">
+                        <i class="fas fa-bus"></i>
+                        <span class="line-code">BRT</span>
+                        <span class="line-name"> Sunway</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
 
     <div class="main-content">
         <!-- Left Panel - Preferences -->
         <div class="left-panel">
-            <!-- Station Selection - Moved to top -->
+            <!-- Station Selection -->
             <div class="station-selection">
                 <div id="routes-container">
                     <!-- Initial route segment -->
@@ -96,24 +163,365 @@
 
         <!-- Right Panel - Results -->
         <div class="right-panel">
+            <!-- Welcome Slider -->
+            <div class="image-slider" id="welcomeSlider">
+                <button class="slider-btn prev-btn" onclick="moveSlide(-1)">❮</button>
+                <div class="slider-container">
+                    <div class="slide-wrapper active">
+                        <img src="{{ url_for('static', filename='images/Whole_Map.jpg') }}" class="slide" alt="Complete Transit Map">
+                        <div class="slide-label">Complete Transit Map</div>
+                    </div>
+                    <div class="slide-wrapper">
+                        <img src="{{ url_for('static', filename='images/LRT-Laluan-Kelana-Jaya.png') }}" class="slide" alt="Kelana Jaya Line">
+                        <div class="slide-label">Kelana Jaya Line</div>
+                    </div>
+                    <div class="slide-wrapper">
+                        <img src="{{ url_for('static', filename='images/lrt-laluan-sri-petaling.png') }}" class="slide" alt="Sri Petaling Line">
+                        <div class="slide-label">Sri Petaling Line</div>
+                    </div>
+                    <div class="slide-wrapper">
+                        <img src="{{ url_for('static', filename='images/monorail.jpg') }}" class="slide" alt="Monorail Line">
+                        <div class="slide-label">Monorail Line</div>
+                    </div>
+                    <div class="slide-wrapper">
+                        <img src="{{ url_for('static', filename='images/MRT-Putrajaya-Line.jpg') }}" class="slide" alt="Putrajaya Line">
+                        <div class="slide-label">Putrajaya Line</div>
+                    </div>
+                    <div class="slide-wrapper">
+                        <img src="{{ url_for('static', filename='images/MRT-Kajang-Line.jpg') }}" class="slide" alt="Kajang Line">
+                        <div class="slide-label">Kajang Line</div>
+                    </div>
+                </div>
+                <button class="slider-btn next-btn" onclick="moveSlide(1)">❯</button>
+                <div class="slider-dots"></div>
+            </div>
+
+            <!-- Results Panel -->
             <div class="results-panel" style="display: none;">
                 <div class="route-options">
-                    <!-- Route options will be populated here -->
+                    <!-- Route cards will be dynamically added here -->
                 </div>
                 <div class="route-details">
-                    <!-- Detailed steps will be shown here -->
+                    <div class="route-summary">
+                        <h3>Route Summary</h3>
+                        <div class="summary-details">
+                            <!-- Summary information will be added here -->
+                        </div>
+                    </div>
+                    <div class="step-by-step">
+                        <h3>Step-by-Step Instructions</h3>
+                        <div class="steps-list">
+                            <!-- Step-by-step instructions will be added here -->
+                        </div>
+                    </div>
                 </div>
             </div>
 
+            <!-- Loading State -->
             <div class="loading" style="display: none;">
                 <div class="spinner"></div>
-                <p>Finding the best routes...</p>
+                <p>Finding the best routes for you...</p>
             </div>
 
+            <!-- Error Messages -->
             <div class="error-message" style="display: none;">
-                <!-- Error messages will be shown here -->
+                <i class="fas fa-exclamation-circle"></i>
+                <p class="error-text"></p>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Image Modal -->
+<div id="imageModal" class="modal">
+    <span class="close-modal">&times;</span>
+    <img class="modal-content" id="zoomedImage">
+    <div id="modalCaption"></div>
+</div>
+
+<script>
+    // Image slider functionality with zoom
+    document.addEventListener('DOMContentLoaded', function () {
+        const slider = document.querySelector('.image-slider');
+        const slides = document.querySelectorAll('.slide-wrapper');
+        const dotsContainer = document.querySelector('.slider-dots');
+        let currentSlide = 0;
+        let scale = 1;
+        let pointX = 0;
+        let pointY = 0;
+        let start = { x: 0, y: 0 };
+
+        // Create dots
+        slides.forEach((_, index) => {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            if (index === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => goToSlide(index));
+            dotsContainer.appendChild(dot);
+        });
+
+        function resetZoom() {
+            scale = 1;
+            pointX = 0;
+            pointY = 0;
+            const activeSlide = document.querySelector('.slide-wrapper.active .slide');
+            if (activeSlide) {
+                activeSlide.style.transform = `translate(0px, 0px) scale(1)`;
+            }
+        }
+
+        function updateSlides() {
+            slides.forEach(slide => {
+                slide.classList.remove('active');
+                // Reset transform for all slides
+                const img = slide.querySelector('.slide');
+                img.style.transform = `translate(0px, 0px) scale(1)`;
+            });
+            document.querySelectorAll('.dot').forEach(dot => dot.classList.remove('active'));
+
+            slides[currentSlide].classList.add('active');
+            document.querySelectorAll('.dot')[currentSlide].classList.add('active');
+
+            // Reset zoom when changing slides
+            resetZoom();
+        }
+
+        function nextSlide() {
+            currentSlide = (currentSlide + 1) % slides.length;
+            updateSlides();
+        }
+
+        function prevSlide() {
+            currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+            updateSlides();
+        }
+
+        function goToSlide(index) {
+            currentSlide = index;
+            updateSlides();
+        }
+
+        // Zoom functionality
+        document.addEventListener('wheel', function (e) {
+            const activeSlide = document.querySelector('.slide-wrapper.active .slide');
+            if (!activeSlide) return;
+
+            if (e.target.closest('.slide-wrapper.active')) {
+                e.preventDefault();
+                const rect = activeSlide.getBoundingClientRect();
+                const xs = (e.clientX - rect.left - pointX) / scale;
+                const ys = (e.clientY - rect.top - pointY) / scale;
+                const delta = -e.deltaY;
+
+                const newScale = Math.min(Math.max(scale + delta * 0.01, 1), 4);
+
+                if (newScale >= 1 && newScale <= 4) {
+                    scale = newScale;
+                    pointX = e.clientX - rect.left - xs * scale;
+                    pointY = e.clientY - rect.top - ys * scale;
+                }
+
+                activeSlide.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
+            }
+        });
+
+        // Pan functionality
+        document.addEventListener('mousedown', function (e) {
+            const activeSlide = document.querySelector('.slide-wrapper.active .slide');
+            if (!activeSlide || !e.target.closest('.slide-wrapper.active')) return;
+
+            e.preventDefault();
+            start = {
+                x: e.clientX - pointX,
+                y: e.clientY - pointY
+            };
+            activeSlide.style.cursor = 'grabbing';
+            activeSlide.addEventListener('mousemove', onMouseMove);
+        });
+
+        function onMouseMove(e) {
+            const activeSlide = document.querySelector('.slide-wrapper.active .slide');
+            if (!activeSlide) return;
+
+            e.preventDefault();
+            pointX = e.clientX - start.x;
+            pointY = e.clientY - start.y;
+            activeSlide.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
+        }
+
+        document.addEventListener('mouseup', function () {
+            const activeSlide = document.querySelector('.slide-wrapper.active .slide');
+            if (activeSlide) {
+                activeSlide.style.cursor = 'grab';
+                activeSlide.removeEventListener('mousemove', onMouseMove);
+            }
+        });
+
+        // Navigation buttons
+        document.querySelector('.next-btn').addEventListener('click', nextSlide);
+        document.querySelector('.prev-btn').addEventListener('click', prevSlide);
+
+        // Double click to reset zoom
+        slider.addEventListener('dblclick', function (e) {
+            if (e.target.closest('.slide-wrapper.active')) {
+                resetZoom();
+            }
+        });
+
+        // Initialize first slide
+        updateSlides();
+    });
+</script>
+
+<style>
+.image-slider {
+    position: relative;
+    width: 100%;
+    height: 600px;
+    overflow: hidden;
+    background: #000;
+    margin-bottom: 20px;
+}
+
+.slider-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.slide-wrapper {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.slide-wrapper.active {
+    opacity: 1;
+}
+
+.slide {
+    width: 100%;
+    height: calc(100% - 40px);
+    object-fit: contain;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.slide:hover {
+    transform: scale(1.02);
+}
+
+.slide-label {
+    color: white;
+    padding: 10px;
+    text-align: center;
+    font-size: 1.2em;
+    font-weight: bold;
+    background: rgba(0, 0, 0, 0.5);
+    width: 100%;
+}
+
+.slider-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    padding: 15px 20px;
+    cursor: pointer;
+    z-index: 1;
+    font-size: 20px;
+    transition: background-color 0.3s ease;
+}
+
+.slider-btn:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.prev-btn {
+    left: 10px;
+}
+
+.next-btn {
+    right: 10px;
+}
+
+.slider-dots {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 1;
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.dot:hover {
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.dot.active {
+    background: white;
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    padding-top: 20px;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+}
+
+.modal-content {
+    margin: auto;
+    display: block;
+    max-width: 90%;
+    max-height: 90vh;
+    object-fit: contain;
+}
+
+#modalCaption {
+    margin: auto;
+    display: block;
+    width: 80%;
+    text-align: center;
+    color: white;
+    padding: 10px 0;
+    height: 150px;
+}
+
+.close-modal {
+    position: absolute;
+    right: 35px;
+    top: 15px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-modal:hover {
+    color: #bbb;
+}
+</style>
 {% endblock %} 

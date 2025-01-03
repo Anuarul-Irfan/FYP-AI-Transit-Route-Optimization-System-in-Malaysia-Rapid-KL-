@@ -127,16 +127,24 @@ for _, transfer in transfers.iterrows():
         fee=0.0  # No fee for transfers
     )
 
-def ant_colony_route(graph, source, target, user_prefs, n_ants=10, n_iterations=50, evaporation_rate=0.1):
+def ant_colony_route(graph, source, target, user_prefs, n_ants=20, n_iterations=100, evaporation_rate=0.1):
     if source not in graph or target not in graph:
         return None, float('inf')
 
-    # Initialize pheromone on edges
+    # Set random seed for reproducibility
+    random.seed(42)
+
+    # Initialize pheromone on edges with a higher base value
+    base_pheromone = 2.0
     for u, v in graph.edges():
-        graph[u][v]['pheromone'] = 1.0
+        graph[u][v]['pheromone'] = base_pheromone
 
     best_path = None
     best_path_cost = float('inf')
+    
+    # Keep track of best paths across iterations
+    all_best_paths = []
+    all_best_costs = []
 
     for iteration in range(n_iterations):
         paths = []
@@ -146,66 +154,64 @@ def ant_colony_route(graph, source, target, user_prefs, n_ants=10, n_iterations=
             current = source
             path = [current]
             path_cost = 0
+            visited = {current}  # Use set for faster lookup
 
             while current != target:
-                neighbors = list(graph.neighbors(current))
+                neighbors = [n for n in graph.neighbors(current) if n not in visited]
                 if not neighbors:
                     break
 
                 # Calculate probabilities for next step
                 probabilities = []
+                total_attractiveness = 0
+                
                 for neighbor in neighbors:
-                    if neighbor not in path:
-                        edge = graph[current][neighbor]
-                        distance = edge['weight']
-                        time = edge.get('time_taken', 0)
-                        fee = edge.get('fee', 0)
-                        is_transfer = edge.get('is_transfer', False)
-                        
-                        # Factor in user preferences
-                        cost = (
-                            user_prefs['distance'] * distance +
-                            user_prefs['cost'] * fee +
-                            user_prefs['comfort'] * (1000 if is_transfer else 0)
-                        )
-                        
-                        # Add scenic preference
-                        if user_prefs['scenic'] > 0:
-                            nearby_pois = graph.nodes[neighbor].get('nearby_pois', [])
-                            scenic_value = len(ast.literal_eval(nearby_pois)) if isinstance(nearby_pois, str) else len(nearby_pois)
-                            cost -= user_prefs['scenic'] * scenic_value * 100
+                    edge = graph[current][neighbor]
+                    distance = edge['weight']
+                    time = edge.get('time_taken', 0)
+                    fee = edge.get('fee', 0)
+                    is_transfer = edge.get('is_transfer', False)
+                    
+                    # Calculate base cost with user preferences
+                    cost = (
+                        user_prefs['distance'] * distance +
+                        user_prefs['cost'] * fee +
+                        user_prefs['comfort'] * (2000 if is_transfer else 0)  # Increased transfer penalty
+                    )
+                    
+                    # Add scenic preference
+                    if user_prefs['scenic'] > 0:
+                        nearby_pois = graph.nodes[neighbor].get('nearby_pois', [])
+                        scenic_value = len(ast.literal_eval(nearby_pois)) if isinstance(nearby_pois, str) else len(nearby_pois)
+                        cost -= user_prefs['scenic'] * scenic_value * 200  # Increased scenic bonus
 
-                        # Add disabled-friendly preference
-                        if user_prefs['disabled_friendly'] > 0:
-                            if not graph.nodes[neighbor].get('isOKU', False):
-                                cost += 1000
+                    # Add disabled-friendly preference
+                    if user_prefs['disabled_friendly'] > 0 and not graph.nodes[neighbor].get('isOKU', False):
+                        cost += 2000  # Increased penalty for non-OKU stations
 
-                        pheromone = edge['pheromone']
-                        probability = (pheromone ** 2) * ((1.0 / cost) ** 3)
-                        probabilities.append((neighbor, probability))
+                    # Calculate attractiveness with modified formula
+                    pheromone = edge['pheromone']
+                    attractiveness = (pheromone ** 1.5) * ((1.0 / (cost + 1)) ** 2)  # Modified exponents
+                    probabilities.append((neighbor, attractiveness))
+                    total_attractiveness += attractiveness
 
-                if not probabilities:
+                if not probabilities or total_attractiveness == 0:
                     break
 
-                # Select next step
-                total = sum(p[1] for p in probabilities)
-                if total == 0:
-                    break
-
-                r = random.random() * total
+                # Select next step using weighted random choice
+                r = random.random() * total_attractiveness
                 cum_prob = 0
-                next_stop = None
-
+                
                 for neighbor, prob in probabilities:
                     cum_prob += prob
                     if cum_prob >= r:
                         next_stop = neighbor
                         break
-
-                if next_stop is None:
-                    break
+                else:
+                    next_stop = probabilities[-1][0]
 
                 path.append(next_stop)
+                visited.add(next_stop)
                 path_cost += graph[current][next_stop]['weight']
                 current = next_stop
 
@@ -216,16 +222,27 @@ def ant_colony_route(graph, source, target, user_prefs, n_ants=10, n_iterations=
                 if path_cost < best_path_cost:
                     best_path = path
                     best_path_cost = path_cost
+                    all_best_paths.append(path)
+                    all_best_costs.append(path_cost)
 
-        # Update pheromones
+        # Update pheromones with increased deposit
         for u, v in graph.edges():
             graph[u][v]['pheromone'] *= (1 - evaporation_rate)
 
         for path, cost in zip(paths, path_costs):
+            deposit = 2.0 / cost  # Increased pheromone deposit
             for u, v in zip(path[:-1], path[1:]):
-                graph[u][v]['pheromone'] += 1.0 / cost
+                graph[u][v]['pheromone'] += deposit
 
+    # Return the most frequent best path
+    if all_best_paths:
+        # Convert paths to tuples for counting
+        path_tuples = [tuple(path) for path in all_best_paths]
+        most_common_path = max(set(path_tuples), key=path_tuples.count)
+        return list(most_common_path), min(all_best_costs)
+    
     return best_path, best_path_cost
+
 
 @app.route('/')
 def index():
@@ -272,80 +289,74 @@ def find_routes():
             best_path, best_cost = ant_colony_route(graph, source, target, user_prefs)
 
             if best_path:
-                # Calculate route details for this segment
-                total_distance = sum(graph[u][v]['weight'] for u, v in zip(best_path[:-1], best_path[1:])) / 1000
-                total_time = sum(graph[u][v].get('time_taken', 0) for u, v in zip(best_path[:-1], best_path[1:])) / 60
-                total_cost = sum(graph[u][v].get('fee', 0.0) for u, v in zip(best_path[:-1], best_path[1:]))
-                interchanges = sum(1 for u, v in zip(best_path[:-1], best_path[1:]) if graph[u][v].get('is_transfer', False))
-                
-                # Handle scenic spots
-                scenic_spots = []
-                for stop in best_path:
-                    pois = graph.nodes[stop].get('nearby_pois', '[]')
-                    if isinstance(pois, str):
-                        try:
-                            pois = ast.literal_eval(pois)
-                        except:
-                            pois = []
-                    scenic_spots.extend([spot for spot, _ in pois])
-
-                # Create step-by-step instructions
+                # Calculate step-by-step details for this segment
                 steps = []
-                current_line = None
+                current_route_id = None
+                current_segment = None
 
-                for from_stop, to_stop in zip(best_path[:-1], best_path[1:]):
-                    edge_data = graph[from_stop][to_stop]
-                    
-                    if edge_data.get('is_transfer', False):
+                for u, v in zip(best_path[:-1], best_path[1:]):
+                    edge_data = graph[u][v]
+                    is_transfer = edge_data.get('is_transfer', False)
+                    route_id = edge_data.get('route_id', 'Unknown')
+
+                    # If it's a transfer or the route changes, finalize the current segment
+                    if is_transfer or (current_route_id and route_id != current_route_id):
+                        if current_segment:
+                            steps.append(current_segment)
+                        current_segment = None
+
+                    # If it's a transfer, add it as a separate step
+                    if is_transfer:
                         steps.append({
-                            'type': 'walk',
-                            'duration': f"{edge_data.get('time_taken', 3)} mins",
-                            'from': graph.nodes[from_stop]['search_name'],
-                            'to': graph.nodes[to_stop]['search_name']
+                            'from': graph.nodes[u]['stop_name'],
+                            'to': graph.nodes[v]['stop_name'],
+                            'distance': f"{edge_data['weight'] / 1000:.2f} km",
+                            'time_taken': f"{edge_data['time_taken'] / 60:.0f} mins",
+                            'cost': f"RM {edge_data['fee']:.2f}",
+                            'route_id': 'Walking',
+                            'is_transfer': True
                         })
                     else:
-                        line = edge_data.get('route_id')
-                        if line != current_line:
-                            current_step = {
-                                'type': stops[stops['stop_id'] == from_stop]['category'].iloc[0],
-                                'line': line,
-                                'from': graph.nodes[from_stop]['search_name'],
-                                'to': graph.nodes[to_stop]['search_name']
-                            }
-                            steps.append(current_step)
-                            current_line = line
+                        # If it's the same route, accumulate the segment
+                        if current_segment and route_id == current_route_id:
+                            current_segment['to'] = graph.nodes[v]['stop_name']
+                            current_segment['distance'] = f"{float(current_segment['distance'].split()[0]) + edge_data['weight'] / 1000:.2f} km"
+                            current_segment['time_taken'] = f"{float(current_segment['time_taken'].split()[0]) + edge_data['time_taken'] / 60:.0f} mins"
+                            current_segment['cost'] = f"RM {float(current_segment['cost'].replace('RM ', '')) + edge_data['fee']:.2f}"
                         else:
-                            current_step['to'] = graph.nodes[to_stop]['search_name']
-                
+                            # Start a new segment
+                            current_segment = {
+                                'from': graph.nodes[u]['stop_name'],
+                                'to': graph.nodes[v]['stop_name'],
+                                'distance': f"{edge_data['weight'] / 1000:.2f} km",
+                                'time_taken': f"{edge_data['time_taken'] / 60:.0f} mins",
+                                'cost': f"RM {edge_data['fee']:.2f}",
+                                'route_id': route_id,
+                                'is_transfer': False
+                            }
+                            current_route_id = route_id
+
+                # Add the last segment if it exists
+                if current_segment:
+                    steps.append(current_segment)
+
+                # Add the segment details to the route
                 route = {
-                    'duration': f"{total_time:.0f} mins",
-                    'cost': f"RM {total_cost:.2f}",
-                    'distance': f"{total_distance:.2f} km",
-                    'interchanges': interchanges,
-                    'scenic_spots': list(set(scenic_spots)),
-                    'oku_friendly': all(stops[stops['stop_id'] == stop]['isOKU'].iloc[0] for stop in best_path),
-                    'steps': steps
+                    'steps': steps,
+                    'total_distance': f"{sum(graph[u][v]['weight'] for u, v in zip(best_path[:-1], best_path[1:])) / 1000:.2f} km",
+                    'total_time': f"{sum(graph[u][v]['time_taken'] for u, v in zip(best_path[:-1], best_path[1:])) / 60:.0f} mins",
+                    'total_cost': f"RM {sum(graph[u][v]['fee'] for u, v in zip(best_path[:-1], best_path[1:])):.2f}",
+                    'interchanges': sum(1 for u, v in zip(best_path[:-1], best_path[1:]) if graph[u][v].get('is_transfer', False))
                 }
-                
                 all_routes.append(route)
             else:
                 return jsonify({'error': f'No valid route found for segment {source} to {target}'}), 404
 
-        # Combine all segment routes into one response
-        combined_route = {
-            'duration': f"{sum(float(r['duration'].split()[0]) for r in all_routes):.0f} mins",
-            'cost': f"RM {sum(float(r['cost'].replace('RM ', '')) for r in all_routes):.2f}",
-            'distance': f"{sum(float(r['distance'].split()[0]) for r in all_routes):.2f} km",
-            'interchanges': sum(r['interchanges'] for r in all_routes),
-            'scenic_spots': list(set([spot for r in all_routes for spot in r['scenic_spots']])),
-            'oku_friendly': all(r['oku_friendly'] for r in all_routes),
-            'steps': [step for r in all_routes for step in r['steps']]
-        }
-        
-        return jsonify([combined_route])
+        # Return the step-by-step details for all segments
+        return jsonify(all_routes)
             
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True) 
+    app.run(debug=True)

@@ -1,20 +1,19 @@
-
-$(document).ready(function() {
+$(document).ready(function () {
     let segmentCount = 0;
 
     // Handle slider value updates
-    $('.slider-container input[type="range"]').on('input', function() {
+    $('.slider-container input[type="range"]').on('input', function () {
         $(this).siblings('.slider-value').text($(this).val());
     });
 
     // Reset preferences button
-    $('#reset-preferences').click(function() {
+    $('#reset-preferences').click(function () {
         $('#preferences-form input[type="range"]').val(0.5).trigger('input');
         $('#oku-friendly').prop('checked', false);
     });
 
     // Add destination button
-    $('#add-destination').click(function() {
+    $('#add-destination').click(function () {
         const lastSegment = $('.route-segment').last();
         const lastToStation = lastSegment.find('.to-station');
         const lastToStationInfo = lastSegment.find('.to-station').closest('.input-with-icon').find('.selected-station-info');
@@ -43,10 +42,10 @@ $(document).ready(function() {
     });
 
     // Remove segment button (delegated event handler)
-    $('#routes-container').on('click', '.remove-segment', function() {
+    $('#routes-container').on('click', '.remove-segment', function () {
         const segment = $(this).closest('.route-segment');
         const segmentIndex = segment.data('segment');
-        
+
         if (segmentIndex === 0) {
             return; // Don't remove the first segment
         }
@@ -56,11 +55,11 @@ $(document).ready(function() {
     });
 
     // Search routes button
-    $('#search-routes').click(function() {
+    $('#search-routes').click(function () {
         const routes = [];
         let isValid = true;
 
-        $('.route-segment').each(function() {
+        $('.route-segment').each(function () {
             const fromStation = $(this).find('.from-station').data('station-id');
             const toStation = $(this).find('.to-station').data('station-id');
 
@@ -100,18 +99,20 @@ $(document).ready(function() {
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(preferences),
-            success: function(routes) {
+            success: function (routes) {
                 displayRoutes(routes);
                 $('.loading').hide();
                 $('.results-panel').show();
+                $('.image-slider').hide(); // Hide slider when showing results
             },
-            error: function(xhr) {
+            error: function (xhr) {
                 $('.loading').hide();
                 showError(xhr.responseJSON?.error || 'Error finding routes');
             }
         });
     });
 
+    // Helper functions
     function createRouteSegment(index) {
         return $(`
             <div class="route-segment" data-segment="${index}">
@@ -137,7 +138,7 @@ $(document).ready(function() {
 
     function updateSegmentConnections() {
         $('.route-connector').remove();
-        $('.route-segment').each(function(index) {
+        $('.route-segment').each(function (index) {
             if (index > 0) {
                 $(this).before('<div class="route-connector"></div>');
             }
@@ -164,16 +165,16 @@ $(document).ready(function() {
                 <div class="route-summary">
                     <div class="route-header">
                         <h4>Route ${index + 1}</h4>
-                        <span class="route-duration">${route.duration}</span>
+                        <span class="route-duration">${route.total_time}</span>
                     </div>
                     <div class="route-info">
                         <div class="info-item">
                             <i class="fas fa-coins"></i>
-                            <span>${route.cost}</span>
+                            <span>${route.total_cost}</span>
                         </div>
                         <div class="info-item">
                             <i class="fas fa-arrows-left-right"></i>
-                            <span>${route.distance}</span>
+                            <span>${route.total_distance}</span>
                         </div>
                         <div class="info-item">
                             <i class="fas fa-exchange-alt"></i>
@@ -185,7 +186,7 @@ $(document).ready(function() {
         `;
 
         const card = $(template);
-        card.click(function() {
+        card.click(function () {
             $('.route-card').removeClass('selected');
             $(this).addClass('selected');
             showRouteDetails(route, index);
@@ -196,114 +197,86 @@ $(document).ready(function() {
 
     function getFullLineName(lineCode) {
         const lineNames = {
-            'KGL': 'Kajang Line',
+            'AGL': 'Ampang Line',
             'KJL': 'Kelana Jaya Line',
             'SPL': 'Sri Petaling Line',
-            'AGL': 'Ampang Line',
+            'KGL': 'Kajang Line',
             'PYL': 'Putrajaya Line',
             'MRL': 'Monorail Line',
             'BRT': 'BRT Sunway Line'
         };
-        return lineNames[lineCode] || lineCode;
+        return lineNames[lineCode] || lineCode; // Return the full name or the code if not found
     }
 
     function showRouteDetails(route, index) {
         const detailsPanel = $('.route-details');
         detailsPanel.empty();
 
-        // Add route header
+        // Add route summary
         detailsPanel.append(`
             <h3>Route ${index + 1} Details</h3>
             <div class="route-summary">
-                <p><i class="fas fa-clock"></i> ${route.duration}</p>
-                <p><i class="fas fa-coins"></i> ${route.cost}</p>
-                <p><i class="fas fa-arrows-left-right"></i> ${route.distance}</p>
-                <p><i class="fas fa-exchange-alt"></i> ${route.interchanges} transfers</p>
+                <p><i class="fas fa-clock"></i> Total Duration: ${route.total_time}</p>
+                <p><i class="fas fa-coins"></i> Total Cost: ${route.total_cost}</p>
+                <p><i class="fas fa-arrows-left-right"></i> Total Distance: ${route.total_distance}</p>
+                <p><i class="fas fa-exchange-alt"></i> Total Transfers: ${route.interchanges}</p>
             </div>
         `);
-
-        // Add scenic spots if available
-        if (route.scenic_spots && route.scenic_spots.length > 0) {
-            detailsPanel.append(`
-                <div class="scenic-spots">
-                    <h4>Nearby Attractions:</h4>
-                    <ul>
-                        ${route.scenic_spots.map(spot => `<li>${spot}</li>`).join('')}
-                    </ul>
-                </div>
-            `);
-        }
 
         // Add step-by-step instructions
         const steps = $('<div class="route-steps"></div>');
         route.steps.forEach((step, stepIndex) => {
-            const stepHtml = createStepHtml(step, route.steps, stepIndex);
+            const stepHtml = createStepHtml(step);
             steps.append(stepHtml);
         });
 
         detailsPanel.append(steps);
     }
-    function formatWalkDuration(duration) {
-        if (!duration) return '5 mins';
-
-        // If duration already includes 'mins', return as is
-        if (typeof duration === 'string' && duration.includes('mins')) {
-            // Extract the number from "180 mins" format
-            const minutes = parseInt(duration);
-            return `${Math.round(minutes / 60)} mins`;
-        }
-
-        // Otherwise treat as seconds and convert
-        const minutes = Math.round(parseInt(duration) / 60);
-        return `${minutes} mins`;
-    }
 
     function createStepHtml(step) {
-        console.log('Step data:', step);  // Keep this for debugging
-
-        if (step.type === 'walk') {
+        if (step.is_transfer) {
             return `
-            <div class="step walk">
-                <i class="fas fa-walking"></i>
-                <div class="step-details">
-                    <p class="step-type">Walking transfer</p>
-                    <p class="step-main">${step.from} → ${step.to}</p>
-                    <div class="step-metrics">
-                        <span><i class="fas fa-clock"></i> ${formatWalkDuration(step.duration)}</span>
-                        <span><i class="fas fa-arrows-left-right"></i> ${step.distance || '0.4 km'}</span>
-                        <span><i class="fas fa-coins"></i> RM 0.00</span>
-                    </div>
+        <div class="step walk">
+            <i class="fas fa-walking"></i>
+            <div class="step-details">
+                <p class="step-type">Walking transfer</p>
+                <p class="step-main">${step.from} → ${step.to}</p>
+                <div class="step-metrics">
+                    <span><i class="fas fa-clock"></i> ${step.time_taken}</span>
+                    <span><i class="fas fa-arrows-left-right"></i> ${step.distance}</span>
+                    <span><i class="fas fa-coins"></i> ${step.cost}</span>
                 </div>
-            </div>`;
+            </div>
+        </div>`;
         } else {
-            const displayLine = step.line === 'KGL' ? 'MRT' : step.line;
-            const lineColor = getLineColor(step.type, step.line);
-            const fullLineName = getFullLineName(step.line);
+            const lineColor = getLineColor('train', step.route_id);  // Get the color for the train line
+            const fullLineName = getFullLineName(step.route_id);    // Get the full name of the train line
 
             return `
-            <div class="step transit">
-                <span class="line-badge" style="background-color: ${lineColor.bg}; color: ${lineColor.text}">
-                    <i class="fas fa-${step.type === 'BRT' ? 'bus' : 'train'}"></i>
-                    ${displayLine}
-                </span>
-                <div class="step-details">
-                    <p class="step-type">${fullLineName}</p>
-                    <p class="step-main">${step.from} → ${step.to}</p>
-                    <div class="step-metrics">
-                        <span><i class="fas fa-clock"></i> ${step.duration || '10 mins'}</span>
-                        <span><i class="fas fa-arrows-left-right"></i> ${step.distance || '2.5 km'}</span>
-                        <span><i class="fas fa-coins"></i> RM ${step.cost || '2.00'}</span>
-                    </div>
+        <div class="step transit">
+            <span class="line-badge" style="background-color: ${lineColor.bg}; color: ${lineColor.text}">
+                <i class="fas fa-train"></i>
+                ${step.route_id}  <!-- Display the train line code (e.g., KJ) -->
+            </span>
+            <div class="step-details">
+                <p class="step-type">${fullLineName}</p>  <!-- Display the full train line name (e.g., Kelana Jaya Line) -->
+                <p class="step-main">${step.from} → ${step.to}</p>
+                <div class="step-metrics">
+                    <span><i class="fas fa-clock"></i> ${step.time_taken}</span>
+                    <span><i class="fas fa-arrows-left-right"></i> ${step.distance}</span>
+                    <span><i class="fas fa-coins"></i> ${step.cost}</span>
                 </div>
-            </div>`;
+            </div>
+        </div>`;
         }
     }
+
     function getLineColor(type, route) {
         const routeToLine = {
             'KJL': 'KJ',
             'SPL': 'PH',
             'AGL': 'AG',
-            'KGL': 'MRT',  // This is the mapping for Kajang Line
+            'KGL': 'MRT',
             'PYL': 'PYL',
             'MRL': 'MR',
             'BRT': 'BRT'
@@ -312,13 +285,13 @@ $(document).ready(function() {
         const lineCode = routeToLine[route] || route;
 
         const lineColors = {
-            'KJ': { bg: '#D50032', text: 'white' },     // Red
-            'PH': { bg: '#76232F', text: 'white' },     // Brown
-            'AG': { bg: '#E57200', text: 'white' },     // Orange
-            'MRT': { bg: '#1A4731', text: 'white' },    // Dark Green
-            'PYL': { bg: '#FFCD00', text: 'black' },    // Yellow
-            'MR': { bg: '#84BD00', text: 'white' },     // Light Green
-            'BRT': { bg: '#115740', text: 'white' }     // Darkest Green
+            'KJ': { bg: '#D50032', text: 'white' },
+            'PH': { bg: '#76232F', text: 'white' },
+            'AG': { bg: '#E57200', text: 'white' },
+            'MRT': { bg: '#1A4731', text: 'white' },
+            'PYL': { bg: '#FFCD00', text: 'black' },
+            'MR': { bg: '#84BD00', text: 'white' },
+            'BRT': { bg: '#115740', text: 'white' }
         };
         return lineColors[lineCode] || { bg: '#666', text: 'white' };
     }
@@ -331,9 +304,6 @@ $(document).ready(function() {
     initializeAutocomplete($('#from-station-0'));
     initializeAutocomplete($('#to-station-0'));
 
-   
-
-    
-
-
-}); 
+    // Disable the "Add Destination" button initially
+    $('#add-destination').prop('disabled', true);
+});
