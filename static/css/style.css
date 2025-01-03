@@ -476,3 +476,73 @@ input[type="range"]::-webkit-slider-thumb {
     content: '•';
     color: #047940;
 } 
+
+.step-metrics {
+    display: flex;
+    gap: 15px;
+    margin-top: 5px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.step-metrics span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.step-metrics i {
+    font-size: 0.9em;
+}
+
+.step-main {
+    font-weight: 500;
+    margin: 5px 0;
+}
+
+.interchange-info {
+    color: #666;
+    font-size: 0.9em;
+    margin: 5px 0;
+    font-style: italic;
+}
+
+.step-type {
+    font-weight: 500;
+    color: #333;
+}
+
+.step-metrics {
+    display: flex;
+    gap: 15px;
+    margin-top: 5px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.step-metrics span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.step-metrics i {
+    font-size: 0.9em;
+}
+
+.step-main {
+    font-weight: 500;
+    margin: 5px 0;
+}
+
+.interchange-info {
+    color: #666;
+    font-size: 0.9em;
+    margin: 5px 0;
+    font-style: italic;
+}
+
+.step-type {
+    font-weight: 500;
+    color: #333;
+}

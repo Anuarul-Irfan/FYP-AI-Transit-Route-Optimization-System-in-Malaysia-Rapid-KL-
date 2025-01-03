@@ -1,3 +1,4 @@
+
 $(document).ready(function() {
     let segmentCount = 0;
 
@@ -193,6 +194,19 @@ $(document).ready(function() {
         return card;
     }
 
+    function getFullLineName(lineCode) {
+        const lineNames = {
+            'KGL': 'Kajang Line',
+            'KJL': 'Kelana Jaya Line',
+            'SPL': 'Sri Petaling Line',
+            'AGL': 'Ampang Line',
+            'PYL': 'Putrajaya Line',
+            'MRL': 'Monorail Line',
+            'BRT': 'BRT Sunway Line'
+        };
+        return lineNames[lineCode] || lineCode;
+    }
+
     function showRouteDetails(route, index) {
         const detailsPanel = $('.route-details');
         detailsPanel.empty();
@@ -222,54 +236,81 @@ $(document).ready(function() {
 
         // Add step-by-step instructions
         const steps = $('<div class="route-steps"></div>');
-        route.steps.forEach(step => {
-            const stepHtml = createStepHtml(step);
+        route.steps.forEach((step, stepIndex) => {
+            const stepHtml = createStepHtml(step, route.steps, stepIndex);
             steps.append(stepHtml);
         });
 
         detailsPanel.append(steps);
     }
+    function formatWalkDuration(duration) {
+        if (!duration) return '5 mins';
 
-    function createStepHtml(step) {
-        if (step.type === 'walk') {
-            return `
-                <div class="step walk">
-                    <i class="fas fa-walking"></i>
-                    <div class="step-details">
-                        <p class="step-type">Walking transfer</p>
-                        <p>${step.from} → ${step.to}</p>
-                        <p class="step-duration">${step.duration}</p>
-                    </div>
-                </div>`;
-        } else {
-            const lineColor = getLineColor(step.type, step.line);
-            return `
-                <div class="step transit">
-                    <span class="line-badge" style="background-color: ${lineColor.bg}; color: ${lineColor.text}">
-                        <i class="fas fa-${step.type === 'BRT' ? 'bus' : 'train'}"></i>
-                        ${step.line}
-                    </span>
-                    <div class="step-details">
-                        <p class="step-type">${step.type}</p>
-                        <p>${step.from} → ${step.to}</p>
-                    </div>
-                </div>`;
+        // If duration already includes 'mins', return as is
+        if (typeof duration === 'string' && duration.includes('mins')) {
+            // Extract the number from "180 mins" format
+            const minutes = parseInt(duration);
+            return `${Math.round(minutes / 60)} mins`;
         }
+
+        // Otherwise treat as seconds and convert
+        const minutes = Math.round(parseInt(duration) / 60);
+        return `${minutes} mins`;
     }
 
+    function createStepHtml(step) {
+        console.log('Step data:', step);  // Keep this for debugging
+
+        if (step.type === 'walk') {
+            return `
+            <div class="step walk">
+                <i class="fas fa-walking"></i>
+                <div class="step-details">
+                    <p class="step-type">Walking transfer</p>
+                    <p class="step-main">${step.from} → ${step.to}</p>
+                    <div class="step-metrics">
+                        <span><i class="fas fa-clock"></i> ${formatWalkDuration(step.duration)}</span>
+                        <span><i class="fas fa-arrows-left-right"></i> ${step.distance || '0.4 km'}</span>
+                        <span><i class="fas fa-coins"></i> RM 0.00</span>
+                    </div>
+                </div>
+            </div>`;
+        } else {
+            const displayLine = step.line === 'KGL' ? 'MRT' : step.line;
+            const lineColor = getLineColor(step.type, step.line);
+            const fullLineName = getFullLineName(step.line);
+
+            return `
+            <div class="step transit">
+                <span class="line-badge" style="background-color: ${lineColor.bg}; color: ${lineColor.text}">
+                    <i class="fas fa-${step.type === 'BRT' ? 'bus' : 'train'}"></i>
+                    ${displayLine}
+                </span>
+                <div class="step-details">
+                    <p class="step-type">${fullLineName}</p>
+                    <p class="step-main">${step.from} → ${step.to}</p>
+                    <div class="step-metrics">
+                        <span><i class="fas fa-clock"></i> ${step.duration || '10 mins'}</span>
+                        <span><i class="fas fa-arrows-left-right"></i> ${step.distance || '2.5 km'}</span>
+                        <span><i class="fas fa-coins"></i> RM ${step.cost || '2.00'}</span>
+                    </div>
+                </div>
+            </div>`;
+        }
+    }
     function getLineColor(type, route) {
         const routeToLine = {
             'KJL': 'KJ',
             'SPL': 'PH',
             'AGL': 'AG',
-            'KJG': 'MRT',
+            'KGL': 'MRT',  // This is the mapping for Kajang Line
             'PYL': 'PYL',
             'MRL': 'MR',
             'BRT': 'BRT'
         };
-        
+
         const lineCode = routeToLine[route] || route;
-        
+
         const lineColors = {
             'KJ': { bg: '#D50032', text: 'white' },     // Red
             'PH': { bg: '#76232F', text: 'white' },     // Brown
@@ -289,4 +330,10 @@ $(document).ready(function() {
     // Initialize autocomplete for the first segment
     initializeAutocomplete($('#from-station-0'));
     initializeAutocomplete($('#to-station-0'));
+
+   
+
+    
+
+
 }); 
