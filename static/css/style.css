@@ -776,5 +776,198 @@ input[type="checkbox"] {
     }
 }
 
+.route-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-bottom: 16px;
+    transition: all 0.2s ease;
+}
+
+.route-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.route-summary {
+    padding: 16px 20px;
+}
+
+.route-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.route-header h4 {
+    color: #2c3e50;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.route-duration {
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.route-info {
+    display: flex;
+    gap: 24px;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #64748b;
+}
+
+.info-item i {
+    color: #475569;
+}
+
+/* Toggle Button Styling */
+.toggle-details-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    border-radius: 0 0 12px 12px;
+    color: #64748b;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.toggle-details-btn:hover {
+    background: #f1f5f9;
+    color: #334155;
+}
+
+/* Route Details Styling */
+.route-details {
+    background: #f8fafc;
+    border-radius: 0 0 12px 12px;
+    padding: 20px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.route-summary p {
+    margin: 8px 0;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Step Container Styling */
+.step-container {
+    background: #fff;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    position: relative;
+}
+
+.step-container:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 24px;
+    width: 2px;
+    height: 12px;
+    background: #e2e8f0;
+}
+
+.step-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.line-badge {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 80px;
+    justify-content: center;
+}
+
+.step-summary {
+    flex: 1;
+}
+
+.step-type {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin: 0 0 4px 0;
+}
+
+.step-main {
+    color: #1e293b;
+    font-weight: 500;
+    margin: 0 0 4px 0;
+}
+
+.step-eta {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.step-metrics {
+    display: flex;
+    gap: 24px;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.step-metrics span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Transit vs Walking styles */
+.step-container.walk {
+    background: #f8fafc;
+}
+
+.step-container.walk .line-badge {
+    background: #64748b;
+    color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .route-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .route-info {
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .step-metrics {
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+}
+
 
 

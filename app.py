@@ -244,6 +244,48 @@ def ant_colony_route(graph, source, target, user_prefs, n_ants=20, n_iterations=
     
     return best_path, best_path_cost
 
+def generate_multiple_routes(graph, source, target, user_prefs, n_routes=4):
+    routes = []
+    unique_paths = set()  # To track unique paths
+
+    # Generate routes with slightly modified preferences
+    for i in range(n_routes):
+        modified_prefs = user_prefs.copy()
+
+        # Slightly tweak the preferences for each route
+        if i == 0:
+            # Route 1: User's original preferences
+            label = "Your Preferences"
+        elif i == 1:
+            # Route 2: Slightly prioritize distance
+            modified_prefs['distance'] *= 1.2  # Increase distance weight by 20%
+            modified_prefs['cost'] *= 0.8      # Decrease cost weight by 20%
+            label = "Slightly Prioritize Distance"
+        elif i == 2:
+            # Route 3: Slightly prioritize cost
+            modified_prefs['cost'] *= 1.2      # Increase cost weight by 20%
+            modified_prefs['distance'] *= 0.8  # Decrease distance weight by 20%
+            label = "Slightly Prioritize Cost"
+        elif i == 3:
+            # Route 4: Slightly prioritize comfort (fewer transfers)
+            modified_prefs['comfort'] *= 1.2   # Increase comfort weight by 20%
+            modified_prefs['scenic'] *= 0.8    # Decrease scenic weight by 20%
+            label = "Slightly Prioritize Comfort"
+
+        # Find the best path with modified preferences
+        best_path, best_cost = ant_colony_route(graph, source, target, modified_prefs)
+        
+        # Ensure the path is unique
+        if best_path and tuple(best_path) not in unique_paths:
+            unique_paths.add(tuple(best_path))  # Add the path to the set of unique paths
+            routes.append({
+                'path': best_path,
+                'cost': best_cost,
+                'label': label  # Add a label for the route
+            })
+    
+    return routes
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -278,27 +320,35 @@ def find_routes():
     try:
         # Get route segments
         route_segments = data['routes']
-        all_steps = []
-        total_distance = 0
-        total_time = 0
-        total_cost = 0
-        total_transfers = 0
+        all_segment_routes = []
 
-        # Process each segment
+        # Process each segment separately
         for segment in route_segments:
-            source = segment['from']
-            target = segment['to']
+            # Generate routes for this segment
+            routes = generate_multiple_routes(graph, segment['from'], segment['to'], user_prefs, n_routes=4)
+            if not routes:
+                return jsonify({'error': f'No valid route found for segment {segment["from"]} to {segment["to"]}'}), 404
+            all_segment_routes.append(routes)  # Keep all routes for each segment
 
-            # Find best path for this segment
-            best_path, best_cost = ant_colony_route(graph, source, target, user_prefs)
-
-            if best_path:
-                # Calculate step-by-step details for this segment
+        # Create multiple combined routes
+        combined_routes = []
+        
+        # For simplicity, we'll use the first 4 combinations
+        for route_index in range(min(4, len(all_segment_routes[0]))):
+            total_steps = []
+            total_distance = 0
+            total_time = 0
+            total_cost = 0
+            total_transfers = 0
+            
+            # Get the route_index-th route from each segment
+            for segment_routes in all_segment_routes:
+                route = segment_routes[min(route_index, len(segment_routes)-1)]
                 steps = []
                 current_route_id = None
                 current_segment = None
 
-                for u, v in zip(best_path[:-1], best_path[1:]):
+                for u, v in zip(route['path'][:-1], route['path'][1:]):
                     edge_data = graph[u][v]
                     is_transfer = edge_data.get('is_transfer', False)
                     route_id = edge_data.get('route_id', 'Unknown')
@@ -320,7 +370,6 @@ def find_routes():
                             'route_id': 'Walking',
                             'is_transfer': True
                         })
-                        total_transfers += 1
                     else:
                         # If it's the same route, accumulate the segment
                         if current_segment and route_id == current_route_id:
@@ -345,23 +394,30 @@ def find_routes():
                 if current_segment:
                     steps.append(current_segment)
 
-                # Accumulate totals
-                total_distance += sum(graph[u][v]['weight'] for u, v in zip(best_path[:-1], best_path[1:])) / 1000
-                total_time += sum(graph[u][v]['time_taken'] for u, v in zip(best_path[:-1], best_path[1:])) / 60
-                total_cost += sum(graph[u][v]['fee'] for u, v in zip(best_path[:-1], best_path[1:]))
-                all_steps.extend(steps)
-            else:
-                return jsonify({'error': f'No valid route found for segment {source} to {target}'}), 404
+                # Add steps to total and update totals
+                total_steps.extend(steps)
+                total_distance += sum(graph[u][v]['weight'] for u, v in zip(route['path'][:-1], route['path'][1:])) / 1000
+                total_time += sum(graph[u][v]['time_taken'] for u, v in zip(route['path'][:-1], route['path'][1:])) / 60
+                total_cost += sum(graph[u][v]['fee'] for u, v in zip(route['path'][:-1], route['path'][1:]))
+                total_transfers += sum(1 for step in steps if step.get('is_transfer', False))
 
-        # Return the step-by-step details for all segments as a single route
-        route = {
-            'steps': all_steps,
-            'total_distance': f"{total_distance:.2f} km",
-            'total_time': f"{total_time:.0f} mins",
-            'total_cost': f"RM {total_cost:.2f}",
-            'interchanges': total_transfers
-        }
-        return jsonify([route])  # Return as a list with one route
+            # Add this combined route to the list
+            route_label = "Your Preferences" if route_index == 0 else \
+                         "Slightly Prioritize Distance" if route_index == 1 else \
+                         "Slightly Prioritize Cost" if route_index == 2 else \
+                         "Slightly Prioritize Comfort"
+            
+            combined_routes.append({
+                'steps': total_steps,
+                'total_distance': f"{total_distance:.2f} km",
+                'total_time': f"{total_time:.0f} mins",
+                'total_cost': f"RM {total_cost:.2f}",
+                'interchanges': total_transfers,
+                'label': route_label
+            })
+
+        # Return all routes
+        return jsonify(combined_routes)
             
     except Exception as e:
         return jsonify({'error': str(e)}), 500

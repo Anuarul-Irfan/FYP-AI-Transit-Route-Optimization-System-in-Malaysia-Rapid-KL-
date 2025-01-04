@@ -172,20 +172,18 @@ $(document).ready(function () {
             return;
         }
 
-        // Display each route
+        // Display each route with its details
         routes.forEach((route, index) => {
             const routeCard = createRouteCard(route, index);
+            const routeDetails = createRouteDetails(route, index);
             routeOptions.append(routeCard);
+            routeOptions.append(routeDetails);
         });
-
-        // Show details for the first route by default
-        showRouteDetails(routes[0], 0);
     }
-
 
     function createRouteCard(route, index) {
         const template = `
-            <div class="route-card ${index === 0 ? 'selected' : ''}" data-route-index="${index}">
+            <div class="route-card" data-route-index="${index}">
                 <div class="route-summary">
                     <div class="route-header">
                         <h4>Route ${index + 1}</h4>
@@ -206,107 +204,106 @@ $(document).ready(function () {
                         </div>
                     </div>
                 </div>
+                <button class="toggle-details-btn" data-target="#route-details-${index}">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
             </div>
         `;
 
         const card = $(template);
-        card.click(function () {
-            // Remove the "selected" class from all route cards
-            $('.route-card').removeClass('selected');
-            // Add the "selected" class to the clicked route card
-            $(this).addClass('selected');
-            // Show the details for the selected route
-            showRouteDetails(route, index);
+        card.find('.toggle-details-btn').click(function () {
+            const target = $(this).data('target');
+            $(target).slideToggle();
+            $(this).find('i').toggleClass('fa-chevron-down fa-chevron-up');
         });
 
         return card;
     }
 
-    function getFullLineName(lineCode) {
-        const lineNames = {
-            'AGL': 'Ampang Line',
-            'KJL': 'Kelana Jaya Line',
-            'SPL': 'Sri Petaling Line',
-            'KGL': 'Kajang Line',
-            'PYL': 'Putrajaya Line',
-            'MRL': 'Monorail Line',
-            'BRT': 'BRT Sunway Line'
-        };
-        return lineNames[lineCode] || lineCode; // Return the full name or the code if not found
-    }
+    function createRouteDetails(route, index) {
+        const details = $(`<div class="route-details" id="route-details-${index}" style="display: none;"></div>`);
 
-    function showRouteDetails(route, index) {
-        const detailsPanel = $('.route-details');
-        detailsPanel.empty(); // Clear existing details
+        // Add route summary with ETA
+        details.append(`
+            <div class="route-summary">
+                <p><i class="fas fa-clock"></i> Total Duration: ${route.total_time}</p>
+                <p><i class="fas fa-hourglass-end"></i> ETA: ${calculateETA(route.total_time)}</p>
+                <p><i class="fas fa-coins"></i> Total Cost: ${route.total_cost}</p>
+                <p><i class="fas fa-arrows-left-right"></i> Total Distance: ${route.total_distance}</p>
+                <p><i class="fas fa-exchange-alt"></i> Total Transfers: ${route.interchanges}</p>
+            </div>
+        `);
 
-        // Add route summary
-        detailsPanel.append(`
-        <h3>Route ${index + 1} Details</h3>
-        <div class="route-summary">
-            <p><i class="fas fa-clock"></i> Total Duration: ${route.total_time}</p>
-            <p><i class="fas fa-coins"></i> Total Cost: ${route.total_cost}</p>
-            <p><i class="fas fa-arrows-left-right"></i> Total Distance: ${route.total_distance}</p>
-            <p><i class="fas fa-exchange-alt"></i> Total Transfers: ${route.interchanges}</p>
-        </div>
-    `);
-
-        // Add step-by-step instructions
+        // Add step-by-step instructions with individual ETAs
         const steps = $('<div class="route-steps"></div>');
+        let accumulatedMinutes = 0;
+
         route.steps.forEach((step, stepIndex) => {
+            // Calculate ETA for this step
+            const stepMinutes = parseInt(step.time_taken.split(' ')[0]);
+            accumulatedMinutes += stepMinutes;
+            const stepEta = calculateETA(`${accumulatedMinutes} mins`);
+
+            // Add ETA to step data
+            step.eta = stepEta;
             const stepHtml = createStepHtml(step);
             steps.append(stepHtml);
         });
 
-        detailsPanel.append(steps);
+        details.append(steps);
+        return details;
+    }
+
+    function calculateETA(totalTime) {
+        const currentTime = new Date();
+        const totalMinutes = parseInt(totalTime.split(' ')[0]);
+        const eta = new Date(currentTime.getTime() + totalMinutes * 60000);
+        return eta.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
     function createStepHtml(step) {
-    if (step.is_transfer) {
-        return `
-        <div class="step-container">
-            <div class="step-header walk" data-bs-toggle="collapse" data-bs-target="#step-details-${step.from.replace(/\s+/g, '-')}-${step.to.replace(/\s+/g, '-')}">
-                <i class="fas fa-walking"></i>
-                <div class="step-summary">
-                    <p class="step-type">Walking transfer</p>
-                    <p class="step-main">${step.from} → ${step.to}</p>
-                </div>
-                <i class="fas fa-chevron-down"></i>
-            </div>
-            <div class="step-details collapse" id="step-details-${step.from.replace(/\s+/g, '-')}-${step.to.replace(/\s+/g, '-')}">
-                <div class="step-metrics">
-                    <span><i class="fas fa-clock"></i> ${step.time_taken}</span>
-                    <span><i class="fas fa-arrows-left-right"></i> ${step.distance}</span>
-                    <span><i class="fas fa-coins"></i> ${step.cost}</span>
-                </div>
-            </div>
-        </div>`;
-    } else {
-        const lineColor = getLineColor('train', step.route_id);
-        const fullLineName = getFullLineName(step.route_id);
+        if (step.is_transfer) {
+            return `
+                <div class="step-container">
+                    <div class="step-header walk">
+                        <i class="fas fa-walking"></i>
+                        <div class="step-summary">
+                            <p class="step-type">Walking transfer</p>
+                            <p class="step-main">${step.from} → ${step.to}</p>
+                            <p class="step-eta">ETA: ${step.eta}</p>
+                        </div>
+                    </div>
+                    <div class="step-metrics">
+                        <span><i class="fas fa-clock"></i> ${step.time_taken}</span>
+                        <span><i class="fas fa-arrows-left-right"></i> ${step.distance}</span>
+                        <span><i class="fas fa-coins"></i> ${step.cost}</span>
+                    </div>
+                </div>`;
+        } else {
+            const lineColor = getLineColor('train', step.route_id);
+            const fullLineName = getFullLineName(step.route_id);
 
-        return `
-        <div class="step-container">
-            <div class="step-header transit" data-bs-toggle="collapse" data-bs-target="#step-details-${step.from.replace(/\s+/g, '-')}-${step.to.replace(/\s+/g, '-')}">
-                <span class="line-badge" style="background-color: ${lineColor.bg}; color: ${lineColor.text}">
-                    <i class="fas fa-train"></i>
-                    ${step.route_id}
-                </span>
-                <div class="step-summary">
-                    <p class="step-type">${fullLineName}</p>
-                    <p class="step-main">${step.from} → ${step.to}</p>
-                </div>
-                <i class="fas fa-chevron-down"></i>
-            </div>
-            <div class="step-details collapse" id="step-details-${step.from.replace(/\s+/g, '-')}-${step.to.replace(/\s+/g, '-')}">
-                <div class="step-metrics">
-                    <span><i class="fas fa-clock"></i> ${step.time_taken}</span>
-                    <span><i class="fas fa-arrows-left-right"></i> ${step.distance}</span>
-                    <span><i class="fas fa-coins"></i> ${step.cost}</span>
-                </div>
-            </div>
-        </div>`;
+            return `
+                <div class="step-container">
+                    <div class="step-header transit">
+                        <span class="line-badge" style="background-color: ${lineColor.bg}; color: ${lineColor.text}">
+                            <i class="fas fa-train"></i>
+                            ${step.route_id}
+                        </span>
+                        <div class="step-summary">
+                            <p class="step-type">${fullLineName}</p>
+                            <p class="step-main">${step.from} → ${step.to}</p>
+                            <p class="step-eta">ETA: ${step.eta}</p>
+                        </div>
+                    </div>
+                    <div class="step-metrics">
+                        <span><i class="fas fa-clock"></i> ${step.time_taken}</span>
+                        <span><i class="fas fa-arrows-left-right"></i> ${step.distance}</span>
+                        <span><i class="fas fa-coins"></i> ${step.cost}</span>
+                    </div>
+                </div>`;
+        }
     }
-}
 
     function getLineColor(type, route) {
         const routeToLine = {
@@ -333,6 +330,19 @@ $(document).ready(function () {
         return lineColors[lineCode] || { bg: '#666', text: 'white' };
     }
 
+    function getFullLineName(lineCode) {
+        const lineNames = {
+            'AGL': 'Ampang Line',
+            'KJL': 'Kelana Jaya Line',
+            'SPL': 'Sri Petaling Line',
+            'KGL': 'Kajang Line',
+            'PYL': 'Putrajaya Line',
+            'MRL': 'Monorail Line',
+            'BRT': 'BRT Sunway Line'
+        };
+        return lineNames[lineCode] || lineCode; // Return the full name or the code if not found
+    }
+
     function showError(message) {
         $('.error-message').text(message).show();
     }
@@ -343,6 +353,4 @@ $(document).ready(function () {
 
     // Disable the "Add Destination" button initially
     $('#add-destination').prop('disabled', true);
-
-    
 });
