@@ -969,5 +969,20 @@ input[type="checkbox"] {
     }
 }
 
+.time-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
 
+.route-duration {
+    font-weight: bold;
+    color: #333;
+}
+
+.route-eta {
+    font-size: 0.9em;
+    color: #f20000;
+    margin-top: 2px;
+}
 

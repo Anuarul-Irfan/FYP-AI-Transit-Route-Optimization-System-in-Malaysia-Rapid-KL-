@@ -182,33 +182,37 @@ $(document).ready(function () {
     }
 
     function createRouteCard(route, index) {
+        const eta = calculateETA(route.total_time);
         const template = `
-            <div class="route-card" data-route-index="${index}">
-                <div class="route-summary">
-                    <div class="route-header">
-                        <h4>Route ${index + 1}</h4>
+        <div class="route-card" data-route-index="${index}">
+            <div class="route-summary">
+                <div class="route-header">
+                    <h4>Route ${index + 1}</h4>
+                    <div class="time-info">
                         <span class="route-duration">${route.total_time}</span>
-                    </div>
-                    <div class="route-info">
-                        <div class="info-item">
-                            <i class="fas fa-coins"></i>
-                            <span>${route.total_cost}</span>
-                        </div>
-                        <div class="info-item">
-                            <i class="fas fa-arrows-left-right"></i>
-                            <span>${route.total_distance}</span>
-                        </div>
-                        <div class="info-item">
-                            <i class="fas fa-exchange-alt"></i>
-                            <span>${route.interchanges} transfers</span>
-                        </div>
+                        <span class="route-eta">ETA: ${eta}</span>
                     </div>
                 </div>
-                <button class="toggle-details-btn" data-target="#route-details-${index}">
-                    <i class="fas fa-chevron-down"></i>
-                </button>
+                <div class="route-info">
+                    <div class="info-item">
+                        <i class="fas fa-coins"></i>
+                        <span>${route.total_cost}</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-arrows-left-right"></i>
+                        <span>${route.total_distance}</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-exchange-alt"></i>
+                        <span>${route.interchanges} transfers</span>
+                    </div>
+                </div>
             </div>
-        `;
+            <button class="toggle-details-btn" data-target="#route-details-${index}">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+    `;
 
         const card = $(template);
         card.find('.toggle-details-btn').click(function () {
