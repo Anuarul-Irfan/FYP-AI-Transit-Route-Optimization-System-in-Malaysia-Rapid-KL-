@@ -174,20 +174,21 @@ def ant_colony_route(graph, source, target, user_prefs, n_ants=20, n_iterations=
                     
                     # Calculate base cost with user preferences
                     cost = (
-                        user_prefs['distance'] * distance +
-                        user_prefs['cost'] * fee +
-                        user_prefs['comfort'] * (2000 if is_transfer else 0)  # Increased transfer penalty
+                        user_prefs['distance'] * distance +  # Higher distance preference = prioritize shorter distance
+                        user_prefs['cost'] * fee +           # Higher cost preference = prioritize lower cost
+                        user_prefs['comfort'] * (5000 if is_transfer else 0)  # Higher comfort preference = prioritize fewer transfers
                     )
                     
                     # Add scenic preference
                     if user_prefs['scenic'] > 0:
                         nearby_pois = graph.nodes[neighbor].get('nearby_pois', [])
                         scenic_value = len(ast.literal_eval(nearby_pois)) if isinstance(nearby_pois, str) else len(nearby_pois)
-                        cost -= user_prefs['scenic'] * scenic_value * 200  # Increased scenic bonus
+                        cost -= user_prefs['scenic'] * scenic_value * 200  # Higher scenic preference = prioritize more scenic points
+                        # Subtracting scenic_value from cost because higher scenic_value should reduce the overall cost
 
                     # Add disabled-friendly preference
                     if user_prefs['disabled_friendly'] > 0 and not graph.nodes[neighbor].get('isOKU', False):
-                        cost += 2000  # Increased penalty for non-OKU stations
+                        cost += 2000  # Penalty for non-OKU stations
 
                     # Calculate attractiveness with modified formula
                     pheromone = edge['pheromone']
@@ -243,7 +244,6 @@ def ant_colony_route(graph, source, target, user_prefs, n_ants=20, n_iterations=
     
     return best_path, best_path_cost
 
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -278,7 +278,11 @@ def find_routes():
     try:
         # Get route segments
         route_segments = data['routes']
-        all_routes = []
+        all_steps = []
+        total_distance = 0
+        total_time = 0
+        total_cost = 0
+        total_transfers = 0
 
         # Process each segment
         for segment in route_segments:
@@ -316,6 +320,7 @@ def find_routes():
                             'route_id': 'Walking',
                             'is_transfer': True
                         })
+                        total_transfers += 1
                     else:
                         # If it's the same route, accumulate the segment
                         if current_segment and route_id == current_route_id:
@@ -340,20 +345,23 @@ def find_routes():
                 if current_segment:
                     steps.append(current_segment)
 
-                # Add the segment details to the route
-                route = {
-                    'steps': steps,
-                    'total_distance': f"{sum(graph[u][v]['weight'] for u, v in zip(best_path[:-1], best_path[1:])) / 1000:.2f} km",
-                    'total_time': f"{sum(graph[u][v]['time_taken'] for u, v in zip(best_path[:-1], best_path[1:])) / 60:.0f} mins",
-                    'total_cost': f"RM {sum(graph[u][v]['fee'] for u, v in zip(best_path[:-1], best_path[1:])):.2f}",
-                    'interchanges': sum(1 for u, v in zip(best_path[:-1], best_path[1:]) if graph[u][v].get('is_transfer', False))
-                }
-                all_routes.append(route)
+                # Accumulate totals
+                total_distance += sum(graph[u][v]['weight'] for u, v in zip(best_path[:-1], best_path[1:])) / 1000
+                total_time += sum(graph[u][v]['time_taken'] for u, v in zip(best_path[:-1], best_path[1:])) / 60
+                total_cost += sum(graph[u][v]['fee'] for u, v in zip(best_path[:-1], best_path[1:]))
+                all_steps.extend(steps)
             else:
                 return jsonify({'error': f'No valid route found for segment {source} to {target}'}), 404
 
-        # Return the step-by-step details for all segments
-        return jsonify(all_routes)
+        # Return the step-by-step details for all segments as a single route
+        route = {
+            'steps': all_steps,
+            'total_distance': f"{total_distance:.2f} km",
+            'total_time': f"{total_time:.0f} mins",
+            'total_cost': f"RM {total_cost:.2f}",
+            'interchanges': total_transfers
+        }
+        return jsonify([route])  # Return as a list with one route
             
     except Exception as e:
         return jsonify({'error': str(e)}), 500

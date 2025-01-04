@@ -39,6 +39,14 @@ $(document).ready(function () {
 
         // Initialize autocomplete for the new "to" station input
         initializeAutocomplete($(`#to-station-${segmentCount}`));
+
+        // Enable the "Add Destination" button if this is the last segment
+        if ($(`#to-station-${segmentCount}`).closest('.route-segment').is(':last-child')) {
+            $('#add-destination').prop('disabled', false);
+        }
+
+        console.log('New segment added:', segmentCount); // Debugging
+        console.log('New "from" station:', newFromStation.val()); // Debugging
     });
 
     // Remove segment button (delegated event handler)
@@ -52,6 +60,13 @@ $(document).ready(function () {
 
         segment.remove();
         updateSegmentConnections();
+
+        // Disable the "Add Destination" button if there are no more segments
+        if ($('.route-segment').length === 1) {
+            $('#add-destination').prop('disabled', true);
+        }
+
+        console.log('Segment removed:', segmentIndex); // Debugging
     });
 
     // Search routes button
@@ -93,6 +108,8 @@ $(document).ready(function () {
             routes: routes
         };
 
+        console.log('Sending preferences:', preferences); // Debugging
+
         // Call API to find routes
         $.ajax({
             url: '/find_routes',
@@ -100,9 +117,10 @@ $(document).ready(function () {
             contentType: 'application/json',
             data: JSON.stringify(preferences),
             success: function (routes) {
+                console.log('Received routes:', routes); // Debugging
                 displayRoutes(routes);
                 $('.loading').hide();
-                $('.results-panel').show();
+                $('.results-panel').show(); // Ensure this line is executed
                 $('.image-slider').hide(); // Hide slider when showing results
             },
             error: function (xhr) {
@@ -147,17 +165,23 @@ $(document).ready(function () {
 
     function displayRoutes(routes) {
         const routeOptions = $('.route-options');
-        routeOptions.empty();
+        routeOptions.empty(); // Clear existing routes
 
+        if (routes.length === 0) {
+            showError('No routes found');
+            return;
+        }
+
+        // Display each route
         routes.forEach((route, index) => {
             const routeCard = createRouteCard(route, index);
             routeOptions.append(routeCard);
         });
 
-        if (routes.length > 0) {
-            showRouteDetails(routes[0], 0);
-        }
+        // Show details for the first route by default
+        showRouteDetails(routes[0], 0);
     }
+
 
     function createRouteCard(route, index) {
         const template = `
@@ -187,8 +211,11 @@ $(document).ready(function () {
 
         const card = $(template);
         card.click(function () {
+            // Remove the "selected" class from all route cards
             $('.route-card').removeClass('selected');
+            // Add the "selected" class to the clicked route card
             $(this).addClass('selected');
+            // Show the details for the selected route
             showRouteDetails(route, index);
         });
 
@@ -210,18 +237,18 @@ $(document).ready(function () {
 
     function showRouteDetails(route, index) {
         const detailsPanel = $('.route-details');
-        detailsPanel.empty();
+        detailsPanel.empty(); // Clear existing details
 
         // Add route summary
         detailsPanel.append(`
-            <h3>Route ${index + 1} Details</h3>
-            <div class="route-summary">
-                <p><i class="fas fa-clock"></i> Total Duration: ${route.total_time}</p>
-                <p><i class="fas fa-coins"></i> Total Cost: ${route.total_cost}</p>
-                <p><i class="fas fa-arrows-left-right"></i> Total Distance: ${route.total_distance}</p>
-                <p><i class="fas fa-exchange-alt"></i> Total Transfers: ${route.interchanges}</p>
-            </div>
-        `);
+        <h3>Route ${index + 1} Details</h3>
+        <div class="route-summary">
+            <p><i class="fas fa-clock"></i> Total Duration: ${route.total_time}</p>
+            <p><i class="fas fa-coins"></i> Total Cost: ${route.total_cost}</p>
+            <p><i class="fas fa-arrows-left-right"></i> Total Distance: ${route.total_distance}</p>
+            <p><i class="fas fa-exchange-alt"></i> Total Transfers: ${route.interchanges}</p>
+        </div>
+    `);
 
         // Add step-by-step instructions
         const steps = $('<div class="route-steps"></div>');
@@ -234,13 +261,18 @@ $(document).ready(function () {
     }
 
     function createStepHtml(step) {
-        if (step.is_transfer) {
-            return `
-        <div class="step walk">
-            <i class="fas fa-walking"></i>
-            <div class="step-details">
-                <p class="step-type">Walking transfer</p>
-                <p class="step-main">${step.from} → ${step.to}</p>
+    if (step.is_transfer) {
+        return `
+        <div class="step-container">
+            <div class="step-header walk" data-bs-toggle="collapse" data-bs-target="#step-details-${step.from.replace(/\s+/g, '-')}-${step.to.replace(/\s+/g, '-')}">
+                <i class="fas fa-walking"></i>
+                <div class="step-summary">
+                    <p class="step-type">Walking transfer</p>
+                    <p class="step-main">${step.from} → ${step.to}</p>
+                </div>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="step-details collapse" id="step-details-${step.from.replace(/\s+/g, '-')}-${step.to.replace(/\s+/g, '-')}">
                 <div class="step-metrics">
                     <span><i class="fas fa-clock"></i> ${step.time_taken}</span>
                     <span><i class="fas fa-arrows-left-right"></i> ${step.distance}</span>
@@ -248,19 +280,24 @@ $(document).ready(function () {
                 </div>
             </div>
         </div>`;
-        } else {
-            const lineColor = getLineColor('train', step.route_id);  // Get the color for the train line
-            const fullLineName = getFullLineName(step.route_id);    // Get the full name of the train line
+    } else {
+        const lineColor = getLineColor('train', step.route_id);
+        const fullLineName = getFullLineName(step.route_id);
 
-            return `
-        <div class="step transit">
-            <span class="line-badge" style="background-color: ${lineColor.bg}; color: ${lineColor.text}">
-                <i class="fas fa-train"></i>
-                ${step.route_id}  <!-- Display the train line code (e.g., KJ) -->
-            </span>
-            <div class="step-details">
-                <p class="step-type">${fullLineName}</p>  <!-- Display the full train line name (e.g., Kelana Jaya Line) -->
-                <p class="step-main">${step.from} → ${step.to}</p>
+        return `
+        <div class="step-container">
+            <div class="step-header transit" data-bs-toggle="collapse" data-bs-target="#step-details-${step.from.replace(/\s+/g, '-')}-${step.to.replace(/\s+/g, '-')}">
+                <span class="line-badge" style="background-color: ${lineColor.bg}; color: ${lineColor.text}">
+                    <i class="fas fa-train"></i>
+                    ${step.route_id}
+                </span>
+                <div class="step-summary">
+                    <p class="step-type">${fullLineName}</p>
+                    <p class="step-main">${step.from} → ${step.to}</p>
+                </div>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="step-details collapse" id="step-details-${step.from.replace(/\s+/g, '-')}-${step.to.replace(/\s+/g, '-')}">
                 <div class="step-metrics">
                     <span><i class="fas fa-clock"></i> ${step.time_taken}</span>
                     <span><i class="fas fa-arrows-left-right"></i> ${step.distance}</span>
@@ -268,8 +305,8 @@ $(document).ready(function () {
                 </div>
             </div>
         </div>`;
-        }
     }
+}
 
     function getLineColor(type, route) {
         const routeToLine = {
@@ -306,4 +343,6 @@ $(document).ready(function () {
 
     // Disable the "Add Destination" button initially
     $('#add-destination').prop('disabled', true);
+
+    
 });
