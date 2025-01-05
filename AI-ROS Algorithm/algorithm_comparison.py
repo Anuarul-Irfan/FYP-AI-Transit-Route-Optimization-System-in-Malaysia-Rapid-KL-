@@ -19,6 +19,26 @@ transfers = pd.read_csv("GTFS Data Creation/transfers.csv")
 # Initialize the graph
 graph = nx.Graph()
 
+def plot_graph(graph):
+    # Get node positions (latitude and longitude)
+    pos = {node: (data['location'][1], data['location'][0]) for node, data in graph.nodes(data=True)}
+
+    # Draw nodes
+    nx.draw_networkx_nodes(graph, pos, node_size=50, node_color='blue', alpha=0.8)
+
+    # Draw edges
+    nx.draw_networkx_edges(graph, pos, edge_color='gray', alpha=0.5)
+
+    # Draw labels (optional, can be slow for large graphs)
+    labels = {node: node for node in graph.nodes()}
+    nx.draw_networkx_labels(graph, pos, labels, font_size=8, font_color='black')
+
+    # Show the plot
+    plt.title("Graph Visualization with Nodes and Edges")
+    plt.xlabel("Longitude")
+    plt.ylabel("Latitude")
+    plt.show()
+
 # Fee calculation function based on distance
 def calculate_dynamic_fare_with_increment(distance):
     initial_fare = 0.20  # Initial starting price
@@ -586,3 +606,4 @@ source = "AG10"  # AMPANG
 target = "PY04"  # SEMANTAN
 
 compare_algorithms_with_varied_prefs(graph, source, target, base_user_prefs, num_runs=10, num_variations=3, variation_factor=0.1)
+
