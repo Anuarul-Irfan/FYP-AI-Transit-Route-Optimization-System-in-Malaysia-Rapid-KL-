@@ -1,6 +1,10 @@
 $(document).ready(function () {
     let segmentCount = 0;
 
+    $('#preferences-header').click(function () {
+        $('#preferences-form').slideToggle();
+        $(this).find('i').toggleClass('fa-chevron-down fa-chevron-up');
+    });
     // Handle slider value updates
     $('.slider-container input[type="range"]').on('input', function () {
         $(this).siblings('.slider-value').text($(this).val());
@@ -180,8 +184,12 @@ $(document).ready(function () {
             routeOptions.append(routeDetails);
         });
     }
-
     function createRouteCard(route, index) {
+        // Calculate total POIs
+        const totalPois = route.steps.reduce((total, step) => {
+            return total + (step.nearby_pois && Array.isArray(step.nearby_pois) ? step.nearby_pois.length : 0);
+        }, 0);
+
         const eta = calculateETA(route.total_time);
         const template = `
         <div class="route-card" data-route-index="${index}">
@@ -206,6 +214,10 @@ $(document).ready(function () {
                         <i class="fas fa-exchange-alt"></i>
                         <span>${route.interchanges} transfers</span>
                     </div>
+                    <div class="info-item">
+                        <i class="fas fa-camera"></i>
+                        <span>${totalPois} attractions</span>
+                    </div>
                 </div>
             </div>
             <button class="toggle-details-btn" data-target="#route-details-${index}">
@@ -223,20 +235,30 @@ $(document).ready(function () {
 
         return card;
     }
-
     function createRouteDetails(route, index) {
+        console.log('Route data:', route); // Debug: Check entire route object
+        console.log('Route steps:', route.steps); // Debug: Check steps array
+
+        const totalPois = route.steps.reduce((total, step) => {
+            console.log('Step POIs:', step.nearby_pois); // Debug: Check POIs for each step
+            return total + (step.nearby_pois && Array.isArray(step.nearby_pois) ? step.nearby_pois.length : 0);
+        }, 0);
+
+        console.log('Total POIs:', totalPois); // Debug: Check total count
+
         const details = $(`<div class="route-details" id="route-details-${index}" style="display: none;"></div>`);
 
-        // Add route summary with ETA
+        // Add route summary with ETA and POI count
         details.append(`
-            <div class="route-summary">
-                <p><i class="fas fa-clock"></i> Total Duration: ${route.total_time}</p>
-                <p><i class="fas fa-hourglass-end"></i> ETA: ${calculateETA(route.total_time)}</p>
-                <p><i class="fas fa-coins"></i> Total Cost: ${route.total_cost}</p>
-                <p><i class="fas fa-arrows-left-right"></i> Total Distance: ${route.total_distance}</p>
-                <p><i class="fas fa-exchange-alt"></i> Total Transfers: ${route.interchanges}</p>
-            </div>
-        `);
+        <div class="route-summary">
+            <p><i class="fas fa-clock"></i> Total Duration: ${route.total_time}</p>
+            <p><i class="fas fa-hourglass-end"></i> ETA: ${calculateETA(route.total_time)}</p>
+            <p><i class="fas fa-coins"></i> Total Cost: ${route.total_cost}</p>
+            <p><i class="fas fa-arrows-left-right"></i> Total Distance: ${route.total_distance}</p>
+            <p><i class="fas fa-camera"></i> Total Points of Interest: ${totalPois}</p>
+            <p><i class="fas fa-exchange-alt"></i> Total Transfers: ${route.interchanges}</p>
+        </div>
+    `);
 
         // Add step-by-step instructions with individual ETAs
         const steps = $('<div class="route-steps"></div>');
@@ -250,8 +272,73 @@ $(document).ready(function () {
 
             // Add ETA to step data
             step.eta = stepEta;
-            const stepHtml = createStepHtml(step);
-            steps.append(stepHtml);
+
+            if (step.is_transfer || step.route_id === 'Walking') {
+                // Walking/Transfer step
+                steps.append(`
+                <div class="step-container walk">
+                    <div class="step-header">
+                        <span class="line-badge" style="background-color: #64748b; color: white">
+                            <i class="fas fa-walking"></i>
+                            Walking
+                        </span>
+                        <div class="step-summary">
+                            <p class="step-type">Transfer</p>
+                            <p class="step-main">${step.from} → ${step.to}</p>
+                        </div>
+                    </div>
+                    <div class="step-metrics">
+                        <span><i class="fas fa-clock"></i> ${step.time_taken}</span>
+                        <span><i class="fas fa-arrows-left-right"></i> ${step.distance}</span>
+                        <span><i class="fas fa-coins"></i> ${step.cost}</span>
+                    </div>
+                    ${step.nearby_pois && step.nearby_pois.length > 0 ? `
+                        <div class="step-pois">
+                            <i class="fas fa-camera"></i>
+                            <span>Points of Interest:</span>
+                            <ul>
+                                ${step.nearby_pois.map(poi => `<li>${poi}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>`);
+            } else {
+                // Transit step
+                const lineColor = getLineColor(step.type, step.route_id);
+                const fullLineName = getFullLineName(step.route_id);
+
+                // Create POIs HTML if available
+                const poisHtml = step.nearby_pois && step.nearby_pois.length > 0 ? `
+                <div class="step-pois">
+                    <i class="fas fa-camera"></i>
+                    <span>Points of Interest:</span>
+                    <ul>
+                        ${step.nearby_pois.map(poi => `<li>${poi}</li>`).join('')}
+                    </ul>
+                </div>
+            ` : '';
+
+                steps.append(`
+                <div class="step-container">
+                    <div class="step-header transit">
+                        <span class="line-badge" style="background-color: ${lineColor.bg}; color: ${lineColor.text}">
+                            <i class="fas fa-${step.route_id === 'BRT' ? 'bus' : 'train'}"></i>
+                            ${step.route_id}
+                        </span>
+                        <div class="step-summary">
+                            <p class="step-type">${fullLineName}</p>
+                            <p class="step-main">${step.from} → ${step.to}</p>
+                            <p class="step-eta">ETA: ${step.eta}</p>
+                        </div>
+                    </div>
+                    <div class="step-metrics">
+                        <span><i class="fas fa-clock"></i> ${step.time_taken}</span>
+                        <span><i class="fas fa-arrows-left-right"></i> ${step.distance}</span>
+                        <span><i class="fas fa-coins"></i> ${step.cost}</span>
+                    </div>
+                    ${poisHtml}
+                </div>`);
+            }
         });
 
         details.append(steps);
@@ -266,46 +353,65 @@ $(document).ready(function () {
     }
 
     function createStepHtml(step) {
-        if (step.is_transfer) {
+        if (step.is_transfer || step.route_id === 'Walking') {
+            // Walking/Transfer step
             return `
-                <div class="step-container">
-                    <div class="step-header walk">
+            <div class="step-container walk">
+                <div class="step-header">
+                    <span class="line-badge" style="background-color: #64748b; color: white">
                         <i class="fas fa-walking"></i>
-                        <div class="step-summary">
-                            <p class="step-type">Walking transfer</p>
-                            <p class="step-main">${step.from} → ${step.to}</p>
-                            <p class="step-eta">ETA: ${step.eta}</p>
-                        </div>
+                        Walking
+                    </span>
+                    <div class="step-summary">
+                        <p class="step-type">Transfer</p>
+                        <p class="step-main">${step.from} → ${step.to}</p>
                     </div>
-                    <div class="step-metrics">
-                        <span><i class="fas fa-clock"></i> ${step.time_taken}</span>
-                        <span><i class="fas fa-arrows-left-right"></i> ${step.distance}</span>
-                        <span><i class="fas fa-coins"></i> ${step.cost}</span>
-                    </div>
-                </div>`;
+                </div>
+                <div class="step-metrics">
+                    <span><i class="fas fa-clock"></i> ${step.time_taken}</span>
+                    <span><i class="fas fa-arrows-left-right"></i> ${step.distance}</span>
+                    <span><i class="fas fa-coins"></i> ${step.cost}</span>
+                </div>
+            </div>`;
         } else {
-            const lineColor = getLineColor('train', step.route_id);
+            // Transit step
+            const lineColor = getLineColor(step.type, step.route_id);
             const fullLineName = getFullLineName(step.route_id);
 
+            console.log('Step data:', step);
+console.log('POIs:', step.nearby_pois);
+
+            // Create POIs HTML if available
+            const poisHtml = step.nearby_pois && step.nearby_pois.length > 0 ? `
+            <div class="step-pois">
+                <i class="fas fa-camera"></i>
+                <span>Points of Interest:</span>
+                <ul>
+                    ${step.nearby_pois.map(poi => `<li>${poi}</li>`).join('')}
+                </ul>
+            </div>
+        ` : '';
+
             return `
-                <div class="step-container">
-                    <div class="step-header transit">
-                        <span class="line-badge" style="background-color: ${lineColor.bg}; color: ${lineColor.text}">
-                            <i class="fas fa-train"></i>
-                            ${step.route_id}
-                        </span>
-                        <div class="step-summary">
-                            <p class="step-type">${fullLineName}</p>
-                            <p class="step-main">${step.from} → ${step.to}</p>
-                            <p class="step-eta">ETA: ${step.eta}</p>
-                        </div>
+            <div class="step-container">
+                <div class="step-header transit">
+                    <span class="line-badge" style="background-color: ${lineColor.bg}; color: ${lineColor.text}">
+                        <i class="fas fa-${step.route_id === 'BRT' ? 'bus' : 'train'}"></i>
+                        ${step.route_id}
+                    </span>
+                    <div class="step-summary">
+                        <p class="step-type">${fullLineName}</p>
+                        <p class="step-main">${step.from} → ${step.to}</p>
+                        <p class="step-eta">ETA: ${step.eta}</p>
                     </div>
-                    <div class="step-metrics">
-                        <span><i class="fas fa-clock"></i> ${step.time_taken}</span>
-                        <span><i class="fas fa-arrows-left-right"></i> ${step.distance}</span>
-                        <span><i class="fas fa-coins"></i> ${step.cost}</span>
-                    </div>
-                </div>`;
+                </div>
+                <div class="step-metrics">
+                    <span><i class="fas fa-clock"></i> ${step.time_taken}</span>
+                    <span><i class="fas fa-arrows-left-right"></i> ${step.distance}</span>
+                    <span><i class="fas fa-coins"></i> ${step.cost}</span>
+                </div>
+                ${poisHtml}
+            </div>`;
         }
     }
 

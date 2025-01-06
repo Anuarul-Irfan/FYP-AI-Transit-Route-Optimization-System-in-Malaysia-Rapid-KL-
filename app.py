@@ -15,8 +15,6 @@ try:
     stop_times = pd.read_csv("Original GTFS Data/stop_times.csv")
     routes = pd.read_csv("Original GTFS Data/routes.csv")
     trips = pd.read_csv("Original GTFS Data/trips.csv")
-    routes_with_pois = pd.read_csv("GTFS Data Creation/routes_with_pois.csv")
-    trips_with_pois = pd.read_csv("GTFS Data Creation/trips_with_pois.csv")
     transfers = pd.read_csv("GTFS Data Creation/transfers.csv")
     print("All data files loaded successfully")
 except Exception as e:
@@ -304,6 +302,8 @@ def get_stations():
         })
     return jsonify(stations)
 
+# ... (keep all imports and initial setup the same) ...
+
 @app.route('/find_routes', methods=['POST'])
 def find_routes():
     data = request.get_json()
@@ -328,7 +328,7 @@ def find_routes():
             routes = generate_multiple_routes(graph, segment['from'], segment['to'], user_prefs, n_routes=4)
             if not routes:
                 return jsonify({'error': f'No valid route found for segment {segment["from"]} to {segment["to"]}'}), 404
-            all_segment_routes.append(routes)  # Keep all routes for each segment
+            all_segment_routes.append(routes)
 
         # Create multiple combined routes
         combined_routes = []
@@ -353,6 +353,14 @@ def find_routes():
                     is_transfer = edge_data.get('is_transfer', False)
                     route_id = edge_data.get('route_id', 'Unknown')
 
+                    # Get POIs for the destination station
+                    dest_pois = graph.nodes[v].get('nearby_pois', '[]')
+                    if isinstance(dest_pois, str):
+                        try:
+                            dest_pois = ast.literal_eval(dest_pois)
+                        except:
+                            dest_pois = []
+
                     # If it's a transfer or the route changes, finalize the current segment
                     if is_transfer or (current_route_id and route_id != current_route_id):
                         if current_segment:
@@ -368,7 +376,8 @@ def find_routes():
                             'time_taken': f"{edge_data['time_taken'] / 60:.0f} mins",
                             'cost': f"RM {edge_data['fee']:.2f}",
                             'route_id': 'Walking',
-                            'is_transfer': True
+                            'is_transfer': True,
+                            'nearby_pois': dest_pois  # Add POIs for transfer destination
                         })
                     else:
                         # If it's the same route, accumulate the segment
@@ -377,6 +386,7 @@ def find_routes():
                             current_segment['distance'] = f"{float(current_segment['distance'].split()[0]) + edge_data['weight'] / 1000:.2f} km"
                             current_segment['time_taken'] = f"{float(current_segment['time_taken'].split()[0]) + edge_data['time_taken'] / 60:.0f} mins"
                             current_segment['cost'] = f"RM {float(current_segment['cost'].replace('RM ', '')) + edge_data['fee']:.2f}"
+                            current_segment['nearby_pois'] = dest_pois  # Update POIs for destination
                         else:
                             # Start a new segment
                             current_segment = {
@@ -386,7 +396,8 @@ def find_routes():
                                 'time_taken': f"{edge_data['time_taken'] / 60:.0f} mins",
                                 'cost': f"RM {edge_data['fee']:.2f}",
                                 'route_id': route_id,
-                                'is_transfer': False
+                                'is_transfer': False,
+                                'nearby_pois': dest_pois  # Add POIs for new segment
                             }
                             current_route_id = route_id
 

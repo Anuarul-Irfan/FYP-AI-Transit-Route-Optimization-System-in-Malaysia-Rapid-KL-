@@ -112,53 +112,69 @@
                 </div>
             </div>
 
-            <div class="preferences-panel">
-                <div class="panel-header">
-                    <h2>Route Preferences</h2>
-                    <button id="reset-preferences" class="secondary-button">Reset</button>
-                </div>
-
-                <form id="preferences-form">
-                    <div class="preference-group">
+    <div class="preferences-panel">
+        <div class="panel-header" id="preferences-header">
+            <h2>
+                <i class="fas fa-chevron-down"></i>
+                Route Preferences
+            </h2>
+            <button id="reset-preferences" class="secondary-button">Reset</button>
+        </div>
+    
+        <form id="preferences-form" style="display: none;">
+            <!-- Keep existing preference groups -->
+                <div class="preference-group">
+                    <div class="preference-header">
                         <label for="cost-priority">Cost Priority</label>
-                        <div class="slider-container">
-                            <input type="range" id="cost-priority" min="0" max="1" step="0.1" value="0.5">
-                            <div class="slider-value">0.5</div>
-                        </div>
+                        <span class="preference-description">The least fares during journey</span>
                     </div>
-
-                    <div class="preference-group">
+                    <div class="slider-container">
+                        <input type="range" id="cost-priority" min="0" max="1" step="0.1" value="0.5">
+                        <div class="slider-value">0.5</div>
+                    </div>
+                </div>
+        
+                <div class="preference-group">
+                    <div class="preference-header">
                         <label for="comfort-priority">Comfort Priority</label>
-                        <div class="slider-container">
-                            <input type="range" id="comfort-priority" min="0" max="1" step="0.1" value="0.5">
-                            <div class="slider-value">0.5</div>
-                        </div>
+                        <span class="preference-description">The least interchange between lines</span>
                     </div>
-
-                    <div class="preference-group">
+                    <div class="slider-container">
+                        <input type="range" id="comfort-priority" min="0" max="1" step="0.1" value="0.5">
+                        <div class="slider-value">0.5</div>
+                    </div>
+                </div>
+        
+                <div class="preference-group">
+                    <div class="preference-header">
                         <label for="scenic-priority">Scenic Priority</label>
-                        <div class="slider-container">
-                            <input type="range" id="scenic-priority" min="0" max="1" step="0.1" value="0.5">
-                            <div class="slider-value">0.5</div>
-                        </div>
+                        <span class="preference-description">Routes with many points of interest</span>
                     </div>
-
-                    <div class="preference-group">
+                    <div class="slider-container">
+                        <input type="range" id="scenic-priority" min="0" max="1" step="0.1" value="0.5">
+                        <div class="slider-value">0.5</div>
+                    </div>
+                </div>
+        
+                <div class="preference-group">
+                    <div class="preference-header">
                         <label for="distance-priority">Distance Priority</label>
-                        <div class="slider-container">
-                            <input type="range" id="distance-priority" min="0" max="1" step="0.1" value="0.5">
-                            <div class="slider-value">0.5</div>
-                        </div>
+                        <span class="preference-description">The shortest possible routes</span>
                     </div>
-
-                    <div class="preference-group checkbox">
-                        <label for="oku-friendly">
-                            <input type="checkbox" id="oku-friendly">
-                            OKU-Friendly Routes Only
-                        </label>
+                    <div class="slider-container">
+                        <input type="range" id="distance-priority" min="0" max="1" step="0.1" value="0.5">
+                        <div class="slider-value">0.5</div>
                     </div>
-                </form>
-            </div>
+                </div>
+        
+                <div class="preference-group checkbox">
+                    <label for="oku-friendly">
+                        <input type="checkbox" id="oku-friendly">
+                        OKU-Friendly Routes Only
+                    </label>
+                </div>
+            </form>
+        </div>
         </div>
 
         <!-- Right Panel - Results -->
